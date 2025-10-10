@@ -78,6 +78,20 @@ class SGRToolCallingResearchAgent(SGRResearchAgent):
             reasoning: ReasoningTool = (
                 (await stream.get_final_completion()).choices[0].message.tool_calls[0].function.parsed_arguments
             )
+        
+        # Check if model actually returned ReasoningTool
+        if not isinstance(reasoning, ReasoningTool):
+            self.logger.warning(f"⚠️ Expected ReasoningTool but got {type(reasoning).__name__}")
+            # Create a default ReasoningTool to maintain workflow
+            reasoning = ReasoningTool(
+                reasoning_steps=["Model skipped reasoning step", "Attempting to continue workflow"],
+                current_situation="Model returned action tool instead of reasoning",
+                plan_status="Workflow interrupted - continuing with default reasoning",
+                enough_data=False,
+                remaining_steps=["Continue with the returned action"],
+                task_completed=False
+            )
+        
         self.conversation.append(
             {
                 "role": "assistant",
@@ -117,19 +131,38 @@ class SGRToolCallingResearchAgent(SGRResearchAgent):
         completion = await stream.get_final_completion()
 
         try:
-            tool = (await stream.get_final_completion()).choices[0].message.tool_calls[0].function.parsed_arguments
-        except (IndexError, AttributeError):
-            tool = AgentCompletionTool(
-                reasoning="Task execution stopped, LLM returned final response without tool call",
-                completed_steps=[completion.choices[0].message.content or "Task completed successfully"],
-                status=AgentStatesEnum.FAILED,
-            )
+            tool = completion.choices[0].message.tool_calls[0].function.parsed_arguments
+        except (IndexError, AttributeError, TypeError):
+            # Model didn't return tool call - create completion tool
+            self.logger.warning("⚠️ Model didn't return tool call, forcing AgentCompletionTool")
+            
+            # Check if task_completed was set to True in reasoning
+            if reasoning.task_completed and reasoning.enough_data:
+                # Model thinks task is done but didn't call CreateReportTool
+                self.logger.error("❌ Model set task_completed=True but didn't call CreateReportTool!")
+                tool = AgentCompletionTool(
+                    reasoning="Model indicated task completion but failed to create report",
+                    completed_steps=["Task marked as completed without proper report generation"],
+                    status=AgentStatesEnum.FAILED,
+                )
+            else:
+                tool = AgentCompletionTool(
+                    reasoning="Task execution stopped, LLM returned final response without tool call",
+                    completed_steps=[completion.choices[0].message.content or "Task completed successfully"],
+                    status=AgentStatesEnum.FAILED,
+                )
         if not isinstance(tool, BaseTool):
             raise ValueError("Selected tool is not a valid BaseTool instance")
+        
+        # Handle case when reasoning is actually an action tool (model skipped ReasoningTool)
+        content = "Completing"
+        if isinstance(reasoning, ReasoningTool) and hasattr(reasoning, "remaining_steps"):
+            content = reasoning.remaining_steps[0] if reasoning.remaining_steps else "Completing"
+        
         self.conversation.append(
             {
                 "role": "assistant",
-                "content": reasoning.remaining_steps[0] if reasoning.remaining_steps else "Completing",
+                "content": content,
                 "tool_calls": [
                     {
                         "type": "function",
