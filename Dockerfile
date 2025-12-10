@@ -51,5 +51,5 @@ ENV PORT=8010
 EXPOSE ${PORT}
 
 # Start the FastAPI server via entrypoint
-ENTRYPOINT ["/app/scripts/entrypoint.sh"]
+CMD ["/bin/sh", "/app/scripts/entrypoint.sh"]
 

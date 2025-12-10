@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 set -e
 
 # Generate config.yaml from environment variables if it doesn't exist
@@ -18,6 +18,9 @@ fi
 # Create necessary directories
 mkdir -p /app/logs /app/reports
 
+# Set default port if not provided
+APP_PORT="${PORT:-8010}"
+
 # Start the application
-exec python3 -m sgr_deep_research --port "${PORT:-8010}"
+exec python3 -m sgr_deep_research --port "$APP_PORT"
 
