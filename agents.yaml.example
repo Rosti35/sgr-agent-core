@@ -128,3 +128,30 @@ agents:
     tools:
       - "WebSearchTool"
       - "FinalAnswerTool"
+
+  # Example 6: Presentation creation agent
+  # This agent researches topics and creates HTML-based presentations
+  # that can be exported to PowerPoint format
+  custom_presentation_agent:
+    base_class: "PresentationAgent"
+
+    llm:
+      model: "gpt-4o"
+      temperature: 0.5
+      max_tokens: 8000
+
+    execution:
+      max_iterations: 25  # More iterations for creating multiple slides
+      max_clarifications: 3
+      max_searches: 6
+      reports_dir: "presentations"
+
+    tools:
+      - "WebSearchTool"
+      - "ExtractPageContentTool"
+      - "CreateSlideTool"
+      - "ExportPresentationTool"
+      - "ClarificationTool"
+      - "GeneratePlanTool"
+      - "AdaptPlanTool"
+      - "FinalAnswerTool"
