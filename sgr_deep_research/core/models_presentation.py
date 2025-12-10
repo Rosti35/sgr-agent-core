@@ -37,3 +37,4 @@ class PresentationContext(BaseModel):
             summary.append(f"Slide {slide.slide_number}: {slide.title} ({slide.layout})")
         return "\n".join(summary)
 
+

@@ -16,8 +16,8 @@ COPY agents.yaml.example ./agents.yaml.example
 COPY logging_config.yaml ./logging_config.yaml
 COPY scripts ./scripts
 
-# Create venv and install the project with dependencies
-RUN uv venv /opt/venv && uv pip install --python /opt/venv/bin/python -e .
+# Create venv and install the project with dependencies (non-editable for proper package data)
+RUN uv venv /opt/venv && uv pip install --python /opt/venv/bin/python .
 
 FROM python:3.13-slim-bookworm AS runner
 

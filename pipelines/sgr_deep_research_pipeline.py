@@ -438,3 +438,4 @@ class SyncPipeline:
             # No event loop, create one
             return asyncio.run(async_pipe())
 
+

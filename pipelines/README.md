@@ -79,3 +79,4 @@ SGR_API_BASE_URL: "http://host.docker.internal:8010"  # macOS/Windows
 SGR_API_BASE_URL: "http://172.17.0.1:8010"  # Linux
 ```
 
+
