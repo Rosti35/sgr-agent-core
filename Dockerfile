@@ -8,21 +8,16 @@ ENV UV_COMPILE_BYTECODE=1 \
 
 WORKDIR /app
 
-# Copy dependency files
-COPY pyproject.toml uv.lock ./
-
-# Install dependencies
-RUN uv venv /opt/venv && uv sync --frozen --no-dev --no-install-project
-
-# Copy the application code
+# Copy all source files
+COPY pyproject.toml ./
 COPY sgr_deep_research ./sgr_deep_research
 COPY config.yaml.example ./config.yaml.example
 COPY agents.yaml.example ./agents.yaml.example
 COPY logging_config.yaml ./logging_config.yaml
 COPY scripts ./scripts
 
-# Install the project
-RUN uv pip install --python /opt/venv/bin/python -e .
+# Create venv and install the project with dependencies
+RUN uv venv /opt/venv && uv pip install --python /opt/venv/bin/python -e .
 
 FROM python:3.13-slim-bookworm AS runner
 
