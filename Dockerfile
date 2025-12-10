@@ -12,7 +12,9 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 
 # Install dependencies
-RUN --mount=type=cache,id=uv-cache,target=/root/.cache/uv \
+# Note: Using ARG for Railway cache key prefix
+ARG CACHE_KEY=""
+RUN --mount=type=cache,id=s/${CACHE_KEY}-uv,target=/root/.cache/uv \
     uv venv /opt/venv && \
     uv sync --frozen --no-dev --no-install-project
 
@@ -24,7 +26,7 @@ COPY logging_config.yaml ./logging_config.yaml
 COPY scripts ./scripts
 
 # Install the project
-RUN --mount=type=cache,id=uv-cache,target=/root/.cache/uv \
+RUN --mount=type=cache,id=s/${CACHE_KEY}-uv,target=/root/.cache/uv \
     uv pip install --python /opt/venv/bin/python -e .
 
 FROM python:3.13-slim-bookworm AS runner
