@@ -18,7 +18,7 @@ from typing import AsyncGenerator, Callable, List, Optional, Union
 import aiohttp
 from pydantic import BaseModel, Field
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 

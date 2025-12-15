@@ -5,7 +5,7 @@ This script reads environment variables and generates the necessary configuratio
 files (config.yaml and agents.yaml) for the SGR Deep Research application.
 
 Environment Variables:
-    - LLM_API_KEY: OpenAI/OpenRouter API key
+    - LLM_API_KEY: OpenAI/OpenRouter API key (REQUIRED)
     - LLM_BASE_URL: API base URL (default: https://api.openai.com/v1)
     - LLM_MODEL: Model name (default: gpt-4o)
     - LLM_MAX_TOKENS: Max output tokens (default: 8000)
@@ -15,6 +15,7 @@ Environment Variables:
 """
 
 import os
+import sys
 import yaml
 from pathlib import Path
 
@@ -22,9 +23,20 @@ from pathlib import Path
 def generate_config():
     """Generate config.yaml from environment variables."""
     
+    # Check for required API key
+    api_key = os.environ.get("LLM_API_KEY", "")
+    if not api_key:
+        print("ERROR: LLM_API_KEY environment variable is required but not set!")
+        print("Please set the LLM_API_KEY in your Railway environment variables.")
+        sys.exit(1)
+    
+    print(f"LLM_API_KEY found: {api_key[:10]}...{api_key[-4:]}")
+    print(f"LLM_BASE_URL: {os.environ.get('LLM_BASE_URL', 'https://api.openai.com/v1')}")
+    print(f"LLM_MODEL: {os.environ.get('LLM_MODEL', 'gpt-4o')}")
+    
     config = {
         "llm": {
-            "api_key": os.environ.get("LLM_API_KEY", ""),
+            "api_key": api_key,
             "base_url": os.environ.get("LLM_BASE_URL", "https://api.openai.com/v1"),
             "model": os.environ.get("LLM_MODEL", "gpt-4o"),
             "max_tokens": int(os.environ.get("LLM_MAX_TOKENS", "8000")),
@@ -47,15 +59,15 @@ def generate_config():
         "agents": {},
     }
 
-    # Remove empty API keys to avoid validation errors
-    if not config["llm"]["api_key"]:
-        del config["llm"]["api_key"]
+    # Remove empty Tavily API key (optional)
     if not config["search"]["tavily_api_key"]:
         del config["search"]["tavily_api_key"]
+        print("WARNING: TAVILY_API_KEY not set - web search will not work")
 
     # Add proxy if provided
     if proxy := os.environ.get("LLM_PROXY"):
         config["llm"]["proxy"] = proxy
+        print(f"LLM_PROXY: {proxy}")
 
     return config
 
@@ -66,7 +78,13 @@ def main():
     # Check if config.yaml already exists
     if config_path.exists():
         print(f"Config file already exists at {config_path}")
-        return
+        # Still validate that API key is present
+        with open(config_path, "r") as f:
+            existing = yaml.safe_load(f)
+        if not existing.get("llm", {}).get("api_key"):
+            print("WARNING: Existing config.yaml has no API key, regenerating...")
+        else:
+            return
 
     config = generate_config()
     
